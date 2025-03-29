@@ -1,82 +1,429 @@
+
+ 
 import streamlit as st
+ 
+
 import pandas as pd
+ 
 import numpy as np
-import joblib  # For loading the saved model
+ 
+import tensorflow as tf
+ 
+from tensorflow import keras
+ 
+from sklearn.preprocessing import StandardScaler
+ 
 
-# Load the trained model
-model = joblib.load("fraud_detection_model.pkl")  # Ensure the model file is in the same directory
+import matplotlib.pyplot as plt
+ 
 
-# Set Streamlit page configuration
-st.set_page_config(page_title="Fraud Detection App", page_icon="⚠️", layout="wide")
+import seaborn as sns
+ 
 
-# App title
-st.title("🔍 Fraudulent Transaction Detection System")
+import time
+ 
 
-# Sidebar navigation
-st.sidebar.header("Navigation")
-page = st.sidebar.radio("Select a page:", ["Home", "Detect Fraud", "About"])
+ 
 
-# Home Page
-if page == "Home":
-    st.write("""
-    ### Welcome to the Fraud Detection App
-    This application allows you to detect fraudulent transactions using a machine learning model.
-    Upload a dataset or enter transaction details manually to check for fraud.
-    """)
+# Load Model
+ 
+model = keras.models.load_model("fraud_detection_model.h5")
+ 
 
-# Fraud Detection Page
-elif page == "Detect Fraud":
-    st.subheader("Enter Transaction Details")
+ 
 
-    # Centering the input fields and prediction button using Streamlit columns
-    col1, col2, col3 = st.columns([1, 2, 1])  # Adjust column widths for alignment
+df = pd.read_csv("advanced_fraud_transactions.csv")
+ 
 
-    with col2:  # Centering content in column 2
-        # User input fields for transaction details
-        amount = st.number_input("Transaction Amount ($)", min_value=0.0, step=0.01)
-        time = st.number_input("Transaction Time (seconds since first transaction)", min_value=0)
-        feature1 = st.number_input("Feature 1")
-        feature2 = st.number_input("Feature 2")
-        feature3 = st.number_input("Feature 3")
-        feature4 = st.number_input("Feature 4")
-        feature5 = st.number_input("Feature 5")
 
-        # Create a dataframe for prediction
-        input_data = pd.DataFrame([[time, amount, feature1, feature2, feature3, feature4, feature5]],
-                                  columns=["Time", "Amount", "Feature1", "Feature2", "Feature3", "Feature4", "Feature5"])
+ 
 
-        if st.button("Predict Fraud"):
-            prediction = model.predict(input_data)[0]
-            if prediction == 1:
-                st.error("⚠️ Fraudulent Transaction Detected!")
-            else:
-                st.success("✅ Transaction is Legitimate.")
+scaler = StandardScaler()
+ 
 
-    # Option to upload CSV for batch processing
-    st.subheader("Upload Transaction Data")
-    uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+X_scaled = scaler.fit_transform(df.drop(columns=["fraudulent"]))
+ 
 
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        predictions = model.predict(df)
-        df["Fraud Prediction"] = ["Fraud" if pred == 1 else "Legit" for pred in predictions]
+
+ 
+
+st.set_page_config(page_title="Fraud Detection", layout="wide")
+ 
+
+
+ 
+
+# Streamlit Page Config
+ 
+
+st.set_page_config(page_title="Fraud Detection AI", layout="wide")
+ 
+
+
+ 
+
+# Custom CSS for 3D UI
+ 
+
+def custom_css():
+ 
+
+    st.markdown(
+ 
+
+        """
+ 
+
+        <style>
+ 
+
+            body {background-color: #121212; color: white;}
+ 
+
+            .sidebar .sidebar-content {background-color: #1e1e1e;}
+ 
+
+            .stButton>button {border-radius: 12px; box-shadow: 2px 2px 10px #888888;}
+ 
+
+            .stTextInput>div>div>input {border-radius: 10px; padding: 10px;}
+ 
+
+            .stNumberInput>div>div>input {border-radius: 10px; padding: 10px;}
+ 
+
+        </style>
+ 
+
+        """,
+ 
+
+        unsafe_allow_html=True,
+ 
+
+    )
+ 
+
+
+ 
+
+custom_css()
+ 
+
+
+ 
+
+# Sidebar - Transaction Inputs
+ 
+st.sidebar.header("🔍 Enter Transaction Details")
+ 
+
+
+ 
+
+amount = st.sidebar.number_input("Transaction Amount ($)", min_value=1, max_value=10000, value=100)
+ 
+
+time = st.sidebar.slider("Transaction Hour (0-23)", 0, 23, 12)
+ 
+
+location = st.sidebar.selectbox("Transaction Location", ["NYC", "SFO", "LON", "SGP", "TKY", "SYD", "BER", "PAR"])
+ 
+
+device = st.sidebar.selectbox("Device Type", ["Mobile", "Desktop", "Tablet", "Smartwatch"])
+ 
+
+transaction_type = st.sidebar.selectbox("Transaction Type", ["Online Purchase", "ATM Withdrawal", "POS Payment", "Bank Transfer", "Crypto Exchange"])
+ 
+
+frequency = st.sidebar.slider("Transactions per Month", 1, 50, 5)
+ 
+
+past_fraud = st.sidebar.radio("Past Fraud History", [0, 1])
+ 
+
+
+ 
+
+amount = st.sidebar.number_input("💰 Transaction Amount ($)", min_value=1, max_value=10000, value=100)
+ 
+
+time_of_transaction = st.sidebar.slider("⏳ Transaction Hour (0-23)", 0, 23, 12)
+ 
+
+location = st.sidebar.selectbox("📍 Location", ["NYC", "SFO", "LON", "SGP", "TKY", "SYD", "BER", "PAR"])
+ 
+
+device = st.sidebar.selectbox("📱 Device Type", ["Mobile", "Desktop", "Tablet", "Smartwatch"])
+ 
+
+transaction_type = st.sidebar.selectbox("💳 Transaction Type", ["Online Purchase", "ATM Withdrawal", "POS Payment", "Bank Transfer", "Crypto Exchange"])
+ 
+
+frequency = st.sidebar.slider("🔁 Transactions per Month", 1, 50, 5)
+ 
+
+past_fraud = st.sidebar.radio("⚠️ Past Fraud History", ["No", "Yes"])
+ 
+
+
+ 
+
+# Encoding Inputs
+ 
+location_map = {loc: i for i, loc in enumerate(["NYC", "SFO", "LON", "SGP", "TKY", "SYD", "BER", "PAR"])}
+ 
+device_map = {dev: i for i, dev in enumerate(["Mobile", "Desktop", "Tablet", "Smartwatch"])}
+ 
+transaction_map = {t: i for i, t in enumerate(["Online Purchase", "ATM Withdrawal", "POS Payment", "Bank Transfer", "Crypto Exchange"])}
+ 
+
+ 
+
+input_data = np.array([[amount, time, location_map[location], device_map[device], transaction_map[transaction_type], frequency, past_fraud]])
+ 
+
+input_scaled = scaler.transform(input_data)
+ 
+
+
+ 
+
+if st.sidebar.button("🔎 Detect Fraud"):
+ 
+
+    prediction = model.predict(input_scaled)
+ 
+
+    fraud_prob = float(prediction[0][0])  # Probability of fraud
+ 
+
+# Prepare input for model
+ 
+
+input_data = np.array([[
+ 
+
+    amount, 
+ 
+
+    time_of_transaction, 
+ 
+
+    location_map[location], 
+ 
+
+    device_map[device], 
+ 
+
+    transaction_map[transaction_type], 
+ 
+
+    frequency, 
+ 
+
+    1 if past_fraud == "Yes" else 0
+ 
+
+]])
+ 
+
+ 
+
+    st.sidebar.subheader("📊 Fraud Risk Score: {:.2f}%".format(fraud_prob * 100))
+ 
+
+scaler = StandardScaler()
+ 
+
+input_scaled = scaler.fit_transform(input_data)
+ 
+
+ 
+
+    if fraud_prob > 0.5:
+ 
+
+# Fraud Detection
+ 
+
+if st.sidebar.button("🔎 Detect Fraud"):
+ 
+
+    with st.spinner("Analyzing Transaction..."):
+ 
+
+        time.sleep(2)
+ 
+
+        prediction = model.predict(input_scaled)
+ 
+
+        fraud_prob = float(prediction[0][0]) * 100  # Convert to percentage
+ 
+
         
-        # Display results in a centered layout
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.write(df.head())
+ 
 
-            # Download results button
-            st.download_button("Download Predictions", df.to_csv(index=False), file_name="predictions.csv")
+    st.sidebar.subheader(f"📊 Fraud Risk Score: {fraud_prob:.2f}%")
+ 
 
-# About Page
-elif page == "About":
-    st.write("""
-    ### About This App
-    - This fraud detection system uses a pre-trained machine learning model.
-    - Enter transaction details manually or upload a dataset for batch processing.
-    - The model predicts whether a transaction is fraudulent or legitimate.
-    """)
+    
+ 
 
-# Footer information in the sidebar
-st.sidebar.info("Developed by Your Name | AI & ML Enthusiast")
+    if fraud_prob > 50:
+ 
+        st.sidebar.error("🚨 High Risk! Fraud Detected.")
+ 
+    else:
+ 
+        st.sidebar.success("✅ Transaction is Safe.")
+ 
+
+ 
+
+st.title("📊 Fraud Detection Dashboard")
+ 
+
+
+ 
+
+st.subheader("Fraud vs Legitimate Transactions")
+ 
+
+fig, ax = plt.subplots()
+ 
+
+sns.countplot(x=df["fraudulent"], palette=["green", "red"], ax=ax)
+ 
+
+ax.set_xticklabels(["Legit", "Fraud"])
+ 
+
+st.pyplot(fig)
+ 
+
+
+ 
+
+st.subheader("Transaction Amount Distribution")
+ 
+
+fig, ax = plt.subplots()
+ 
+
+sns.histplot(df[df["fraudulent"] == 0]["transaction_amount"], color="green", label="Legit", kde=True, ax=ax)
+ 
+
+sns.histplot(df[df["fraudulent"] == 1]["transaction_amount"], color="red", label="Fraud", kde=True, ax=ax)
+ 
+
+ax.legend()
+ 
+
+st.pyplot(fig)
+ 
+
+
+ 
+
+st.subheader("Fraud Transactions by Hour")
+ 
+
+fig, ax = plt.subplots()
+ 
+
+sns.histplot(df[df["fraudulent"] == 1]["transaction_time"], bins=24, color="red", kde=True, ax=ax)
+ 
+
+ax.set_xlabel("Hour of the Day")
+ 
+
+st.pyplot(fig)
+ 
+
+
+ 
+
+st.subheader("Fraud by Device Type")
+ 
+
+fig, ax = plt.subplots()
+ 
+
+sns.barplot(x=df["device_type"], y=df["fraudulent"], palette="coolwarm", ax=ax)
+ 
+
+st.pyplot(fig)
+ 
+
+
+ 
+
+st.markdown("🚀 **Developed with Streamlit & TensorFlow** | AI-Powered Fraud Detection")
+ 
+
+# 3D Styled Fraud Detection Dashboard
+ 
+
+st.markdown("""
+ 
+
+    <h1 style='text-align: center;'>🚀 AI Fraud Detection System</h1>
+ 
+
+    <div style='text-align: center;'>
+ 
+
+        <img src='https://cdn-icons-png.flaticon.com/512/5477/5477844.png' width=150>
+ 
+
+    </div>
+ 
+
+    <p style='text-align: center; font-size: 18px;'>
+ 
+
+        Secure your transactions with AI-powered fraud detection.
+ 
+
+    </p>
+ 
+
+    """, unsafe_allow_html=True)
+ 
+
+
+ 
+
+st.markdown("""
+ 
+
+    <div style='text-align: center;'>
+ 
+
+        <button style='border-radius: 12px; padding: 10px 20px; font-size: 18px; background-color: #ff4b4b; color: white; border: none;'>
+ 
+
+            AI-Powered Security ✅
+ 
+
+        </button>
+ 
+
+    </div>
+ 
+
+    """, unsafe_allow_html=True)
+ 
+
+
+ 
+
+st.markdown("---")
+ 
+
+
+ 
+
+st.markdown("**Developed with Streamlit & TensorFlow | AI-Powered Fraud Detection 🔒**")
