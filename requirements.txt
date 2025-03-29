@@ -1,9 +1,7 @@
 streamlit
-tensorflow
+tensorflow==2.19.0
 pandas
 numpy
 seaborn
 scikit-learn
 matplotlib
-tensorflow==2.13.0
-keras==2.13.1
