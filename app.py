@@ -28,25 +28,29 @@ if page == "Home":
 elif page == "Detect Fraud":
     st.subheader("Enter Transaction Details")
 
-    # User input fields for transaction details
-    amount = st.number_input("Transaction Amount ($)", min_value=0.0, step=0.01)
-    time = st.number_input("Transaction Time (seconds since first transaction)", min_value=0)
-    feature1 = st.number_input("Feature 1")
-    feature2 = st.number_input("Feature 2")
-    feature3 = st.number_input("Feature 3")
-    feature4 = st.number_input("Feature 4")
-    feature5 = st.number_input("Feature 5")
+    # Centering the input fields and prediction button using Streamlit columns
+    col1, col2, col3 = st.columns([1, 2, 1])  # Adjust column widths for alignment
 
-    # Create a dataframe for prediction
-    input_data = pd.DataFrame([[time, amount, feature1, feature2, feature3, feature4, feature5]],
-                              columns=["Time", "Amount", "Feature1", "Feature2", "Feature3", "Feature4", "Feature5"])
+    with col2:  # Centering content in column 2
+        # User input fields for transaction details
+        amount = st.number_input("Transaction Amount ($)", min_value=0.0, step=0.01)
+        time = st.number_input("Transaction Time (seconds since first transaction)", min_value=0)
+        feature1 = st.number_input("Feature 1")
+        feature2 = st.number_input("Feature 2")
+        feature3 = st.number_input("Feature 3")
+        feature4 = st.number_input("Feature 4")
+        feature5 = st.number_input("Feature 5")
 
-    if st.button("Predict Fraud"):
-        prediction = model.predict(input_data)[0]
-        if prediction == 1:
-            st.error("⚠️ Fraudulent Transaction Detected!")
-        else:
-            st.success("✅ Transaction is Legitimate.")
+        # Create a dataframe for prediction
+        input_data = pd.DataFrame([[time, amount, feature1, feature2, feature3, feature4, feature5]],
+                                  columns=["Time", "Amount", "Feature1", "Feature2", "Feature3", "Feature4", "Feature5"])
+
+        if st.button("Predict Fraud"):
+            prediction = model.predict(input_data)[0]
+            if prediction == 1:
+                st.error("⚠️ Fraudulent Transaction Detected!")
+            else:
+                st.success("✅ Transaction is Legitimate.")
 
     # Option to upload CSV for batch processing
     st.subheader("Upload Transaction Data")
@@ -56,10 +60,14 @@ elif page == "Detect Fraud":
         df = pd.read_csv(uploaded_file)
         predictions = model.predict(df)
         df["Fraud Prediction"] = ["Fraud" if pred == 1 else "Legit" for pred in predictions]
-        st.write(df.head())
+        
+        # Display results in a centered layout
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.write(df.head())
 
-        # Download results
-        st.download_button("Download Predictions", df.to_csv(index=False), file_name="predictions.csv")
+            # Download results button
+            st.download_button("Download Predictions", df.to_csv(index=False), file_name="predictions.csv")
 
 # About Page
 elif page == "About":
@@ -70,4 +78,5 @@ elif page == "About":
     - The model predicts whether a transaction is fraudulent or legitimate.
     """)
 
+# Footer information in the sidebar
 st.sidebar.info("Developed by Your Name | AI & ML Enthusiast")
