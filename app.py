@@ -10,15 +10,6 @@ model = keras.models.load_model("fraud_detection_model.h5")
 # Streamlit Page Configuration
 st.set_page_config(page_title="Fraud Detection AI", layout="centered")
 
-# Custom Styling
-st.markdown("""
-    <style>
-        .stApp {background-color: #121212; color: white;}
-        .stSidebar {background-color: #1e1e1e; color: white; padding: 10px; border-radius: 10px;}
-        .result-box {border-radius: 15px; padding: 20px; text-align: center;}
-    </style>
-""", unsafe_allow_html=True)
-
 # Sidebar for User Input
 st.sidebar.header("🔍 Enter Transaction Details")
 amount = st.sidebar.number_input("💰 Transaction Amount ($)", min_value=1, max_value=10000, value=100)
@@ -55,4 +46,4 @@ if st.button("🔎 Detect Fraud", use_container_width=True):
 
 # Footer
 st.markdown("---")
-st.markdown("🚀 **Built with Streamlit & TensorFlow** | AI-Powered Fraud Detection")
+st.markdown
